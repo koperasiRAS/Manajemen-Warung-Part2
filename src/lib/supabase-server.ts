@@ -1,9 +1,9 @@
 import { createClient } from '@supabase/supabase-js';
-import { headers } from 'next/headers';
 
 // Server-side Supabase client for API routes
-// Forwards the user's auth token from the request headers
-export async function createServerSupabase() {
+// Uses service role key (bypasses RLS) when available,
+// otherwise falls back to anon key with forwarded auth header
+export async function createServerSupabase(authHeader?: string | null) {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL!;
   const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
   const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
@@ -15,16 +15,11 @@ export async function createServerSupabase() {
     });
   }
 
-  // Otherwise, use anon key + forward auth header from client
-  const headersList = await headers();
-  const authHeader = headersList.get('authorization');
-
-  const client = createClient(url, anonKey, {
+  // Fallback: use anon key + forwarded auth header
+  return createClient(url, anonKey, {
     auth: { persistSession: false },
     global: {
       headers: authHeader ? { Authorization: authHeader } : {},
     },
   });
-
-  return client;
 }
