@@ -23,36 +23,58 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true);
 
   const fetchUserProfile = async (userId: string) => {
-    const { data, error } = await supabase
-      .from('users')
-      .select('*')
-      .eq('id', userId)
-      .single();
+    try {
+      const { data, error } = await supabase
+        .from('users')
+        .select('*')
+        .eq('id', userId)
+        .single();
 
-    if (error || !data) {
+      if (error || !data) {
+        setUser(null);
+        setRole(null);
+        return;
+      }
+
+      setUser(data as AppUser);
+      setRole(data.role as UserRole);
+    } catch {
       setUser(null);
       setRole(null);
-      return;
     }
-
-    setUser(data as AppUser);
-    setRole(data.role as UserRole);
   };
 
   useEffect(() => {
-    // Get initial session
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-      if (session?.user) {
-        fetchUserProfile(session.user.id).finally(() => setLoading(false));
-      } else {
+    let mounted = true;
+
+    // Safety timeout — never stay loading for more than 5 seconds
+    const timeout = setTimeout(() => {
+      if (mounted && loading) {
+        console.warn('Auth timeout — setting loading to false');
         setLoading(false);
       }
-    });
+    }, 5000);
+
+    // Get initial session
+    supabase.auth.getSession()
+      .then(({ data: { session } }) => {
+        if (!mounted) return;
+        setSession(session);
+        if (session?.user) {
+          return fetchUserProfile(session.user.id);
+        }
+      })
+      .catch((err) => {
+        console.error('Auth session error:', err);
+      })
+      .finally(() => {
+        if (mounted) setLoading(false);
+      });
 
     // Listen for auth changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (_event, session) => {
+        if (!mounted) return;
         setSession(session);
         if (session?.user) {
           await fetchUserProfile(session.user.id);
@@ -63,7 +85,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
     );
 
-    return () => subscription.unsubscribe();
+    return () => {
+      mounted = false;
+      clearTimeout(timeout);
+      subscription.unsubscribe();
+    };
   }, []);
 
   const login = async (email: string, password: string) => {
