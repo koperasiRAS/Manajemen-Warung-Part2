@@ -22,7 +22,7 @@ export default function InventoryPage() {
         authFetch('/api/inventory').then(r => r.json()),
         supabase.from('stock_logs').select('*, products(name)').order('created_at', { ascending: false }).limit(50),
       ]);
-      setProducts(productsRes || []);
+      setProducts(Array.isArray(productsRes) ? productsRes : []);
       setStockLogs(logsRes.data || []);
     } catch { /* */ }
     setLoading(false);

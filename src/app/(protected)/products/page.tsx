@@ -38,7 +38,7 @@ export default function ProductsPage() {
       const res = await authFetch('/api/products');
       if (!res.ok) throw new Error('API error');
       const data = await res.json();
-      setProducts(data || []);
+      setProducts(Array.isArray(data) ? data : []);
       try {
         const catRes = await supabase.from('categories').select('*').order('name');
         setCategories((catRes.data as Category[]) || []);

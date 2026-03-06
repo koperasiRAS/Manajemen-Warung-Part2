@@ -23,7 +23,7 @@ export default function EmployeesPage() {
       const res = await authFetch('/api/employees');
       if (!res.ok) throw new Error('API error');
       const data = await res.json();
-      setEmployees(data || []);
+      setEmployees(Array.isArray(data) ? data : []);
     } catch { setEmployees([]); }
     setLoading(false);
   };

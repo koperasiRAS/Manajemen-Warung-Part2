@@ -25,7 +25,7 @@ export default function HistoryPage() {
       const res = await authFetch(`/api/history?${params.toString()}`);
       if (!res.ok) throw new Error('API error');
       const data = await res.json();
-      setTransactions(data || []);
+      setTransactions(Array.isArray(data) ? data : []);
     } catch { setTransactions([]); }
     setLoading(false);
   };
