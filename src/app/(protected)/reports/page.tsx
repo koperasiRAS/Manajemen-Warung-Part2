@@ -41,7 +41,7 @@ export default function ReportsPage() {
         const txnItems: any[] = apiData.txnItems || [];
         const exps: { amount: number; date: string; category: string }[] = apiData.expenses || [];
 
-        const transactions = apiData.transactions || [];
+        const transactions: { total: number; created_at: string; payment_method: string }[] = apiData.transactions || [];
         const items = txnItems;
 
         // Daily breakdown
